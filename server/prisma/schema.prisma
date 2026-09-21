@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum ContractStatus {
+  ACTIVE
+  PENDING
+  CANCELLED
+  EXPIRED
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users      User[]
+  customers  Customer[]
+  contracts  Contract[]
+  activities Activity[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  name           String
+  role           Role     @default(STAFF)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+
+  activities Activity[]
+
+  @@index([organizationId])
+}
+
+model Customer {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  nameKana       String?
+  phone          String?
+  email          String?
+  address        String?
+  birthDate      DateTime?
+  memo           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  contracts  Contract[]
+  activities Activity[]
+
+  @@index([organizationId])
+}
+
+model Contract {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+  productName    String
+  contractNumber String?
+  status         ContractStatus @default(ACTIVE)
+  premiumAmount  Int?
+  paymentCycle   String?
+  startDate      DateTime
+  renewalDate    DateTime?
+  cancelledAt    DateTime?
+  memo           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([renewalDate])
+}
+
+model Activity {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+  userId         String
+  user           User @relation(fields: [userId], references: [id])
+  type           String
+  content        String
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([customerId])
+}
